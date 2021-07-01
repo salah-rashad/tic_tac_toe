@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe/app/routes/app_pages.dart';
 import 'package:tic_tac_toe/app/widgets/custom_button.dart';
+import 'package:tic_tac_toe/game/TicTacToe/ai-game.dart';
 import 'package:tic_tac_toe/game/TicTacToe/tic_tac_toe.dart';
 
 class HomePage extends StatefulWidget {
@@ -58,7 +59,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () => Navigator.pushNamed(
                 context,
                 Routes.GAME,
-                arguments: AI(),
+                arguments: AIGame(gameSize: currentValue),
               ),
               text: "Player vs. AI",
             ),

@@ -10,7 +10,7 @@ enum BoxState { EMPTY, X, O }
 
 class Box extends SpriteComponent with Tapable, HasGameRef<TicTacToe> {
   final Vector2 size, position;
-  final Point<int> gridCell;
+  final Point<int> location;
   final int gameSize;
   final bool isAIGame;
 
@@ -25,7 +25,7 @@ class Box extends SpriteComponent with Tapable, HasGameRef<TicTacToe> {
   Box(
       {required this.size,
       required this.position,
-      required this.gridCell,
+      required this.location,
       required this.gameSize,
       this.isAIGame = false})
       : super(size: size, position: position) {
@@ -43,30 +43,22 @@ class Box extends SpriteComponent with Tapable, HasGameRef<TicTacToe> {
   }
 
   Future<void> makeX() async {
-    sprite = await Sprite.load("x.png");
     state = BoxState.X;
-
-    (gameRef as AI).justDoIt();
-
-    // gameRef.checkWin(this);
+    sprite = await Sprite.load("x.png");
 
     // print("X");
   }
 
   Future<void> makeO() async {
-    sprite = await Sprite.load("o.png");
     state = BoxState.O;
-
-    // gameRef.checkWin(this);
+    sprite = await Sprite.load("o.png");
 
     // print("O");
   }
 
   Future<void> makeEmpty() async {
-    sprite = null;
     state = BoxState.EMPTY;
-
-    // if (!isAIGame) gameRef.checkWin(this);
+    sprite = null;
 
     // print("O");
   }
@@ -95,15 +87,9 @@ class Box extends SpriteComponent with Tapable, HasGameRef<TicTacToe> {
 
   @override
   bool onTapDown(TapDownInfo info) {
-    if (gameRef.gameFreezed) return false;
+    if (gameRef.gameFreezed || gameRef.gameFinished) return false;
     if (state == BoxState.EMPTY) {
-      if (gameRef.xTurn) {
-        makeX();
-        gameRef.xTurn = false;
-      } else {
-        makeO();
-        gameRef.xTurn = true;
-      }
+      gameRef.makeMove(this);
     }
 
     return super.onTapDown(info);

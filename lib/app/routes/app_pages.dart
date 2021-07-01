@@ -16,10 +16,7 @@ abstract class AppPages {
       case Routes.GAME:
         {
           final game = settings.arguments as TicTacToe;
-          return MaterialPageRoute(
-              builder: (context) => GamePage(
-                    game: game,
-                  ));
+          return MaterialPageRoute(builder: (context) => GamePage(game: game));
         }
       default:
         return MaterialPageRoute(builder: (ctx) => Error404Page());

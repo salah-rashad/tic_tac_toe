@@ -21,6 +21,7 @@ class TicTacToe extends BaseGame with HasTapableComponents {
 
   bool xTurn = new Random().nextBool();
   bool gameFreezed = false;
+  bool gameFinished = false;
 
   String message = "";
 
@@ -97,7 +98,7 @@ class TicTacToe extends BaseGame with HasTapableComponents {
           size: Vector2(boxSize, boxSize),
           position: Vector2(
               x * boxSize, max(CENTER_START, CENTER_START + boxSize * y)),
-          gridCell: Point(x, y),
+          location: Point(x, y),
           gameSize: gameSize,
           isAIGame: !vsPlayer,
         ),
@@ -113,10 +114,23 @@ class TicTacToe extends BaseGame with HasTapableComponents {
     }
   }
 
-  void checkWin(Box box) {
+  /// Makes move and check for a winner by calling [winnerChecker]
+  Future<void> makeMove(Box box, {BoxState? state}) async {
+    if (state == null)
+      xTurn == true ? await box.makeX() : await box.makeO();
+    else
+      state == BoxState.X ? await box.makeX() : await box.makeO();
+
+    xTurn = !xTurn;
+    winnerChecker(box);
+  }
+
+  /// Checks for a Winner or a Tie
+  void winnerChecker(Box box) {
+    // Changes
     message = (xTurn ? "X" : "O") + " Turn";
 
-    gameFreezed = true;
+    horizontal(box);
 
     if (!horizontal(box) &&
         !vertical(box) &&
@@ -124,16 +138,18 @@ class TicTacToe extends BaseGame with HasTapableComponents {
         !diagonal2(box)) checkTie(box);
   }
 
-  bool isWin(int counter, Box box, {Function? onWinCallback}) {
-    if (counter == gameSize) {
-      gameFreezed = true;
-      message = (box.isX ? "X" : "O") + " WINS";
-      messageText =
-          textPaint(fontSize: MESSAGE_FONT_SIZE, color: Colors.greenAccent);
+  /// Checks if a specific boxes are equal on not,
+  /// if they are equal finish the game and call [winner]
+  bool isEquals(List<Box> boxes) {
+    // Checking boxes equality, if all boxes are equal return true, otherwise return false
+    bool isEqualsX = boxes.every((b) => b.state == BoxState.X);
+    bool isEqualsO = boxes.every((b) => b.state == BoxState.O);
 
-      onWinCallback!();
-      addRestartButton();
+    // if found equality then it's a win
+    if (isEqualsX || isEqualsO) {
       gameFreezed = true;
+
+      winner(boxes);
       return true;
     } else {
       gameFreezed = false;
@@ -141,114 +157,99 @@ class TicTacToe extends BaseGame with HasTapableComponents {
     }
   }
 
-  bool horizontal(Box box, {bool win = false}) {
-    int counter = 0;
+  /// Makes winner processes
+  void winner(List<Box> boxes) {
+    final winner = boxes[0].state;
 
-    if (win) increaseWinTimes(box.state);
+    // Change winner boxes background to green
+    for (Box b in boxes) {
+      b.fillPaint?.color = Colors.greenAccent;
+    }
+
+    // Increases winner's win counter +1
+    increaseWinTimes(winner);
+
+    // Informs who just won (e.g.: "X WINS" or "O WINS")
+    message = (winner == BoxState.X ? "X" : "O") + " WINS 🎉";
+
+    // Changes the message text color to Green
+    messageText =
+        textPaint(fontSize: MESSAGE_FONT_SIZE, color: Colors.greenAccent);
+
+    finishGame();
+  }
+
+  /// Checks row's boxes equality where [box] located.
+  bool horizontal(Box box) {
+    List<Box> boxes = [];
 
     for (int x = 0; x < gameSize; x++) {
-      var b = grid[x][box.gridCell.y];
-
-      if (win) {
-        addgGreen(b);
-      } else {
-        if (b.state == box.state)
-          counter++;
-        else
-          break;
-      }
+      var b = grid[x][box.location.y];
+      boxes.add(b);
     }
 
-    return isWin(counter, box, onWinCallback: () => horizontal(box, win: true));
+    return isEquals(boxes);
   }
 
-  bool vertical(Box box, {bool win = false}) {
-    int counter = 0;
-
-    if (win) increaseWinTimes(box.state);
+  /// Checks column's boxes equality where [box] located.
+  bool vertical(Box box) {
+    List<Box> boxes = [];
 
     for (int y = 0; y < gameSize; y++) {
-      var b = grid[box.gridCell.x][y];
-
-      if (win) {
-        addgGreen(b);
-      } else {
-        if (b.state == box.state)
-          counter++;
-        else
-          break;
-      }
+      var b = grid[box.location.x][y];
+      boxes.add(b);
     }
 
-    return isWin(counter, box, onWinCallback: () => vertical(box, win: true));
+    return isEquals(boxes);
   }
 
-  bool diagonal1(Box box, {bool win = false}) {
-    int counter = 0;
-
-    if (win) increaseWinTimes(box.state);
+  /// Checks diagonal (as backslash "\")'s boxes equality where [box] located.
+  bool diagonal1(Box box) {
+    List<Box> boxes = [];
 
     for (int x = 0, y = 0; x < gameSize; x++, y++) {
       var b = grid[x][y];
-
-      if (win) {
-        addgGreen(b);
-      } else {
-        if (b.state == box.state)
-          counter++;
-        else
-          break;
-      }
+      boxes.add(b);
     }
 
-    return isWin(counter, box, onWinCallback: () => diagonal1(box, win: true));
+    return isEquals(boxes);
   }
 
-  bool diagonal2(Box box, {bool win = false}) {
-    int counter = 0;
-
-    if (win) increaseWinTimes(box.state);
+  /// Checks diagonal (as forward slash "/")'s boxes equality where [box] located.
+  bool diagonal2(Box box) {
+    List<Box> boxes = [];
 
     for (int x = 0, y = gameSize - 1; x < gameSize; x++, y--) {
       var b = grid[x][y];
-
-      if (win) {
-        addgGreen(b);
-      } else {
-        if (b.state == box.state)
-          counter++;
-        else
-          break;
-      }
+      boxes.add(b);
     }
 
-    return isWin(counter, box, onWinCallback: () => diagonal2(box, win: true));
+    return isEquals(boxes);
   }
 
+  /// Checks if there's no moves left and no winner,
+  /// then make a TIE and finish the game.
   void checkTie(Box box) {
-    int c = 0;
+    int filledBoxesCounter = 0;
 
     for (int x = 0; x < gameSize; x++) {
       for (int y = 0; y < gameSize; y++) {
-        if (grid[x][y].state != BoxState.EMPTY) c++;
+        if (grid[x][y].state != BoxState.EMPTY) filledBoxesCounter++;
       }
     }
 
-    if (c == gameSize * gameSize) {
+    if (filledBoxesCounter == gameSize * gameSize) {
       message = "TIE";
       messageText =
           textPaint(fontSize: MESSAGE_FONT_SIZE, color: Colors.orange);
 
-      addRestartButton();
-      gameFreezed = true;
+      finishGame();
     }
   }
 
-  void addgGreen(Box b) {
-    b.fillPaint?.color = Colors.greenAccent;
-  }
-
-  void addRestartButton() {
+  /// This function is called to finish the game and shows the restart button.
+  void finishGame() {
+    gameFinished = true;
     add(
       TextButtonComponent(
         "PLAY AGAIN!",
@@ -256,25 +257,29 @@ class TicTacToe extends BaseGame with HasTapableComponents {
         position: Vector2(width / 2, height - 150.0),
         anchor: Anchor.center,
         textColor: Colors.white,
+        backgroundColor: Colors.amber,
       ),
     );
   }
 
+  /// Clears all boxes and reload the game.
   void reset() {
     removeAll(components);
     grid = [];
     onLoad();
     gameFreezed = false;
+    gameFinished = false;
     messageText = textPaint(fontSize: MESSAGE_FONT_SIZE, color: Colors.black);
   }
 
+  /// Increases win times counter for a winner.
   void increaseWinTimes(BoxState state) {
     if (state == BoxState.X) xWinTimes++;
     if (state == BoxState.O) oWinTimes++;
   }
 }
 
-class AI extends TicTacToe {
+/* class AI extends TicTacToe {
   Timer? timer;
 
   AI() : super(gameSize: 3, vsPlayer: false);
@@ -465,3 +470,4 @@ class AI extends TicTacToe {
     return bestMove;
   }
 }
+ */
